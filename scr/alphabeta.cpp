@@ -16,6 +16,7 @@ int ROOK_EVAL = 5;
 int QUEEN_EVAL = 9;
 int KING_EVAL = 999999;
 
+
 int min(int a, int b){
     if (a > b){
         return b;
@@ -23,6 +24,7 @@ int min(int a, int b){
         return a;
     }
 }
+
 
 int max(int a, int b){
     if (a > b){
@@ -148,10 +150,20 @@ int alphabeta(string fen, int depth){
 
 
 int main(int argc, char* argv[]){
+    if (argc != 3){
+        return 0;
+    }
+
+    string fen = argv[1];
+    int depth = stoi(argv[2]);
     Board* board = new Board();
-    board->set_fen(argv[1]);
-    int result = alphabeta(board, 2);
+
+    board->set_fen(fen);
+    int result = alphabeta(board, depth);
     delete board;
+
+    cout << fen << "\t\t\t" << depth << "\n";
     cout << "Suceess\n";
     return result+9999999;
 }
+
