@@ -7,23 +7,7 @@
 #include "move.cpp"
 #include "piece.cpp"
 #include "errors.cpp"
-#include "memorycontrol.cpp"
 
-//void* operator new (size_t size, const char* filename, int line) {
-//    void* ptr = new char[size+2];
-//    char* as_str = (char*)ptr;
-//    as_str[size+1] = 0;
-//    string type;
-//    if (filename == "D:/Documents/BackUp/Projects/editors/C++/C++ programs/boardstate.cpp"){
-//        type = "BoardState";
-//    }else{
-//        type = filename;
-//    }
-//    cout << "type = " << type << " line = " << line << "\n";
-//    return ptr;
-//}
-//
-//#define new new(__FILE__, __LINE__)
 
 using namespace std;
 
@@ -35,18 +19,6 @@ struct PosAsInts{
     int x;
     int y;
 };
-
-// Cout all variables
-void cout_all(State data){
-    cout << "State(\n";
-    for (int i=0; i<64; i++){
-        cout << data[i] << " ";
-        if ((i+1)%8 == 0){
-            cout << "\n";
-        }
-    }
-    cout << ") // Note it is flipped in the y direction\n";
-}
 
 
 //                            -------- -------- 
@@ -63,6 +35,7 @@ void cout_all(State data){
 
 class BoardState{
     public:
+        Moves* _legal_moves = NULL;
         PiecePointers white;
         PiecePointers black;
         bool player;
@@ -73,11 +46,7 @@ class BoardState{
         ~BoardState(){
             this->white.free();
             this->black.free();
-        }
-
-        void free(){
-            this->white.free();
-            this->black.free();
+            delete _legal_moves;
         }
 
         BoardState* create_new(){
@@ -89,6 +58,9 @@ class BoardState{
             _new->gameover = this->gameover;
             this->white.deepcopy_to_p(&_new->white);
             this->black.deepcopy_to_p(&_new->black);
+            // Not going to copy _legal_moves that because it is
+            // mainly used in push and it will have to be reset
+            //this->_legal_moves->deepcopy_to(_new->_legal_moves);
         }
 
         BoardState(string fen){
@@ -230,31 +202,32 @@ class BoardState{
         }
 
         bool is_game_over(){
-            if (not this->gameover){
-                Moves moves = this->legal_moves();
-                this->gameover = (moves.length == 0);
-            }
-            return this->gameover;
+            return this->gameover = (this->legal_moves()->length == 0);
         }
 
-        Moves legal_moves(){
-            PiecePointers* self = this->get_pieces_to_play();
-            PiecePointers* other = this->get_pieces_not_to_play();
-            State self_mask = this->pieces_to_bitset(self);
-            State other_mask = this->pieces_to_bitset(other);
-            Piece* king = this->get_king(other);
+        Moves* legal_moves(){
+            if (this->_legal_moves == NULL){
+                PiecePointers* self = this->get_pieces_to_play();
+                PiecePointers* other = this->get_pieces_not_to_play();
+                State self_mask = this->pieces_to_bitset(self);
+                State other_mask = this->pieces_to_bitset(other);
+                Piece* king = this->get_king(other);
 
-            Moves moves = this->pseudolegal_moves(self, self_mask, other_mask, king);
-            this->remove_illegal_moves(&moves);
-            if (moves.length == 0){
-                this->gameover = true;
+                Moves* moves = this->pseudolegal_moves(self, self_mask, other_mask, king);
+                this->remove_illegal_moves(moves);
+                if (moves->length == 0){
+                    this->gameover = true;
+                }
+                this->_legal_moves = moves;
+                return moves;
+            }else{
+                return this->_legal_moves;
             }
-            return moves;
         }
 
-        Moves pseudolegal_moves(PiecePointers* self, State self_mask, State other_mask, Piece* king){
+        Moves* pseudolegal_moves(PiecePointers* self, State self_mask, State other_mask, Piece* king){
             self->start_iter();
-            Moves output;
+            Moves* output = new Moves();
             int king_pos = king->pos();
             while (self->has_next()){
                 Piece* piece = self->next_item();
@@ -270,17 +243,19 @@ class BoardState{
                         if ((type == 0) and (((piece->colour == 1) and (to_y == 7)) or ((piece->colour == 0) and (to_y == 0)))){
                             for (int prom=1; prom<5; prom++){
                                 Move move(from, to, prom);
-                                output.append(move);
+                                output->append(move);
                                 if (to == king_pos){
                                     self->stop_iter();
+                                    delete output;
                                     throw CapturedKingError();
                                 }
                             }
                         }else{
                             Move move(from, to);
-                            output.append(move);
+                            output->append(move);
                             if (to == king_pos){
                                 self->stop_iter();
+                                delete output;
                                 throw CapturedKingError();
                             }
                         }
@@ -297,24 +272,24 @@ class BoardState{
             while (moves->has_next()){
                 Move move = moves->next_item();
 
-                BoardState new_state;
-                this->deepcopy_to(&new_state);
-                new_state.push(move);
+                BoardState* new_state = this->push(move);
 
                 // Set up vars:
-                PiecePointers* self = new_state.get_pieces_to_play();
-                PiecePointers* other = new_state.get_pieces_not_to_play();
-                State self_mask = new_state.pieces_to_bitset(self);
-                State other_mask = new_state.pieces_to_bitset(other);
-                Piece* king = new_state.get_king(other);
+                PiecePointers* self = new_state->get_pieces_to_play();
+                PiecePointers* other = new_state->get_pieces_not_to_play();
+                State self_mask = new_state->pieces_to_bitset(self);
+                State other_mask = new_state->pieces_to_bitset(other);
+                Piece* king = new_state->get_king(other);
                 // Done
 
                 try{
-                    new_state.pseudolegal_moves(self, self_mask, other_mask, king);
+                    Moves* moves = new_state->pseudolegal_moves(self, self_mask, other_mask, king);
+                    delete moves;
                 }catch (CapturedKingError exception){
                     moves_to_remove.append(i);
                 }
                 i += 1;
+                delete new_state;
             }
             moves_to_remove.reverse();
             moves_to_remove.start_iter();
@@ -324,11 +299,14 @@ class BoardState{
             }
         }
 
-        void push(Move move){
-            auto ints = this->pos_to_ints(move.from);
+        BoardState* push(Move move){
+            BoardState* other = new BoardState;
+            this->deepcopy_to(other);
+
+            auto ints = other->pos_to_ints(move.from);
             int from_x = ints.x;
             int from_y = ints.y;
-            ints = this->pos_to_ints(move.to);
+            ints = other->pos_to_ints(move.to);
             int to_x = ints.x;
             int to_y = ints.y;
 
@@ -337,7 +315,7 @@ class BoardState{
             int idx = 0;
             bool found = false;
 
-            PiecePointers* pieces = this->get_pieces_to_play();
+            PiecePointers* pieces = other->get_pieces_to_play();
             pieces->start_iter();
             while (pieces->has_next()){
                 Piece* piece = pieces->next_item();
@@ -355,7 +333,7 @@ class BoardState{
                 throw IllegalMoveError();
             }
 
-            pieces = this->get_pieces_not_to_play();
+            pieces = other->get_pieces_not_to_play();
             pieces->start_iter();
             while (pieces->has_next()){
                 Piece* piece = pieces->next_item();
@@ -376,7 +354,8 @@ class BoardState{
                 piece_to_move->type = move.promotion;
             }
 
-            this->player = not this->player;
+            other->player = not other->player;
+            return other;
         }
 
         Piece* get_king(PiecePointers* pieces){
@@ -469,22 +448,3 @@ class BoardState{
 
 typedef List<BoardState> BoardStates;
 typedef List<BoardState*> BoardStatePointers;
-
-
-//int main(){
-//    string fen = "rnbqkbnr/pPpppppp/8/8/8/8/P1PPPPPP/RNBQKBNR w KQkq";
-//    BoardState* board = new BoardState(fen);
-//
-//    Moves legal_moves = board->legal_moves();
-//    legal_moves.start_iter();
-//    while (legal_moves.has_next()){
-//        cout << legal_moves.next_item() << "\n";
-//    }
-//
-//    //board->push(Move(49, 56, 4));
-//
-//    board->print();
-//
-//    return 0;
-//}
-
