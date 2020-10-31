@@ -1,8 +1,6 @@
 // https://www.geeksforgeeks.org/reverse-a-linked-list/
 #pragma once
 #include <iostream>
-//#include <type_traits>
-#include "memorycontrol.cpp"
 
 #include "errors.cpp"
 
@@ -236,6 +234,19 @@ template <class Type>
                 while (this->has_next()){
                     Type item = this->next_item();
                     if (this->has_next()){
+                        cout << item << ", ";
+                    }else{
+                        cout << item << "]\n";
+                    }
+                }
+            }
+
+            void print_p(){
+                this->start_iter();
+                cout << "[";
+                while (this->has_next()){
+                    Type item = this->next_item();
+                    if (this->has_next()){
                         cout << *item << ", ";
                     }else{
                         cout << *item << "]\n";
@@ -243,37 +254,3 @@ template <class Type>
                 }
             }
     };
-
-
-//class Object{
-//    public:
-//        int value;
-//        Object(){}
-//        Object(int x){
-//            this->value = x;
-//        }
-//        Object(Object* _new){
-//            _new->value = this->value;
-//        }
-//        friend ostream& operator<<(ostream& os, const Object& obj){
-//            return os << obj.value;
-//        }
-//        void deepcopy_to(Object* _new){
-//            _new->value = this->value;
-//        }
-//        Object* create_new(){
-//            return new Object;
-//        }
-//};
-//
-//
-//int main(){
-//    List<Object*> list;
-//    list.append(new Object(10));
-//    list.append(new Object(20));
-//    list.append(new Object(30));
-//    list.append(new Object(40));
-//    //list.remove(0);
-//    return 0;
-//}
-
