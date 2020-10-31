@@ -35,13 +35,15 @@ class Board{
         }
 
         void set_fen(string fen){
-            delete this->state;
+            if (this->state != NULL){
+                delete this->state;
+            }
             this->states.free();
             this->stack.free();
             this->state = new BoardState(fen);
         }
 
-        Moves legal_moves(){
+        Moves* legal_moves(){
             return this->state->legal_moves();
         }
 
@@ -56,13 +58,8 @@ class Board{
 
         void push(Move* move){
             this->stack.append(move);
-
-            BoardState* new_state = new BoardState;
-            this->state->deepcopy_to(new_state);
-
-            new_state->push(*move);
             this->states.append(this->state);
-            this->state = new_state;
+            this->state = this->state->push(*move);
         }
 
         void pop(){
@@ -80,12 +77,3 @@ class Board{
             this->state->print();
         }
 };
-
-
-//int main(){
-//    Board* board = new Board();
-//    board->print();
-//    delete board;
-//    return 0;
-//}
-
