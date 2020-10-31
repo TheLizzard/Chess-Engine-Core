@@ -357,14 +357,3 @@ class Piece{
 
 typedef List<Piece> Pieces;
 typedef List<Piece*> PiecePointers;
-
-
-
-//int main(){
-//    Piece* piece1 = new Piece(0, false, 0, 0);
-//    Piece* piece2 = new Piece(0, true, 0, 6);
-//    delete piece1;
-//    delete piece2;
-//    return 0;
-//}
-
