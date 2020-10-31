@@ -46,4 +46,3 @@ class Move{
 
 typedef List<Move*> MovePointers;
 typedef List<Move> Moves;
-
