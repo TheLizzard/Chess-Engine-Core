@@ -5,6 +5,7 @@
 #include "move.cpp"
 #include "boardstate.cpp"
 
+
 using namespace std;
 
 
@@ -87,15 +88,18 @@ int eval_board(Board* board){
 
 
 int alphabeta(Board* board, int depth, int alpha, int beta){
-    if ((depth == 0) or board->is_game_over()){
+    if (board->is_game_over()){
+        return (9999999*((not board->player())*2-1));
+    }
+    if (depth == 0){
         return eval_board(board);
     }
     if (board->player()){
         int value = -9999999;
-        Moves possible_moves = board->legal_moves();
-        possible_moves.start_iter();
-        while (possible_moves.has_next()){
-            Move move = possible_moves.next_item();
+        Moves* possible_moves = board->legal_moves();
+        possible_moves->start_iter();
+        while (possible_moves->has_next()){
+            Move move = possible_moves->next_item();
             Board* child = new Board();
             board->deepcopy_to(child);
             child->push(move);
@@ -109,10 +113,10 @@ int alphabeta(Board* board, int depth, int alpha, int beta){
         return value;
     }else{
         int value = 9999999;
-        Moves possible_moves = board->legal_moves();
-        possible_moves.start_iter();
-        while (possible_moves.has_next()){
-            Move move = possible_moves.next_item();
+        Moves* possible_moves = board->legal_moves();
+        possible_moves->start_iter();
+        while (possible_moves->has_next()){
+            Move move = possible_moves->next_item();
             Board* child = new Board();
             board->deepcopy_to(child);
             child->push(move);
@@ -145,20 +149,9 @@ int alphabeta(string fen, int depth){
 
 int main(int argc, char* argv[]){
     Board* board = new Board();
-    board->set_fen("rnbqkbnr/pPpppppp/8/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1");
-
-    int result = alphabeta(board, 5);
-    cout << result << "\n";
-    board->print();
+    board->set_fen(argv[1]);
+    int result = alphabeta(board, 2);
     delete board;
-    return 0;
+    cout << "Suceess\n";
+    return result+9999999;
 }
-
-
-//void __main(int argc, char* argv[]){
-//    for (int i = 0; i < argc; i++){
-//        string x = argv[i];
-//        cout << "Argument " << i << " = " << x << "\n";
-//    }
-//}
-
