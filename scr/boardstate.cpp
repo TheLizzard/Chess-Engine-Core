@@ -12,9 +12,6 @@
 using namespace std;
 
 
-typedef bitset<64> State;
-
-
 struct PosAsInts{
     int x;
     int y;
@@ -38,8 +35,8 @@ class BoardState{
         Moves* _legal_moves = NULL;
         PiecePointers white;
         PiecePointers black;
+        int in_check = 2;
         bool player;
-        bool gameover = false;
 
         BoardState(){}
 
@@ -55,7 +52,6 @@ class BoardState{
 
         void deepcopy_to(BoardState* _new){
             _new->player = this->player;
-            _new->gameover = this->gameover;
             this->white.deepcopy_to_p(&_new->white);
             this->black.deepcopy_to_p(&_new->black);
             // Not going to copy _legal_moves that because it is
@@ -79,7 +75,7 @@ class BoardState{
                     break;
                 }
                 if (pos > 63){
-                    cout << "Fen too long.\n";
+                    cerr << "Fen too long.\n";
                     throw ValueError();
                 }
                 PosAsInts pos_as_ints = this->pos_to_ints(pos);
@@ -174,9 +170,8 @@ class BoardState{
                         pos -= 1;
                         break;
                     default:
-                        cout << "Unkown character: " << fen[i] << "\n";
-                        endloop = true;
-                        break;
+                        cerr << "Unkown character: " << fen[i] << "\n";
+                        throw ValueError();
                 }
                 pos += 1;
                 if (endloop){
@@ -201,23 +196,33 @@ class BoardState{
             }
         }
 
+        bool is_in_check(){
+            if (this->in_check == 2){
+                bool result = false;
+                BoardState* new_state = new BoardState;
+                this->deepcopy_to(new_state);
+                new_state->player = not new_state->player;
+                try{
+                    Moves* moves = new_state->legal_moves();
+                    delete moves;
+                }catch (CapturedKingError exception){
+                    result = true;
+                }
+                this->in_check = (int)result;
+                return result;
+            }else{
+                return (bool)this->in_check;
+            }
+        }
+
         bool is_game_over(){
-            return this->gameover = (this->legal_moves()->length == 0);
+            return (this->legal_moves()->length == 0);
         }
 
         Moves* legal_moves(){
             if (this->_legal_moves == NULL){
-                PiecePointers* self = this->get_pieces_to_play();
-                PiecePointers* other = this->get_pieces_not_to_play();
-                State self_mask = this->pieces_to_bitset(self);
-                State other_mask = this->pieces_to_bitset(other);
-                Piece* king = this->get_king(other);
-
-                Moves* moves = this->pseudolegal_moves(self, self_mask, other_mask, king);
+                Moves* moves = this->pseudolegal_moves();
                 this->remove_illegal_moves(moves);
-                if (moves->length == 0){
-                    this->gameover = true;
-                }
                 this->_legal_moves = moves;
                 return moves;
             }else{
@@ -225,44 +230,25 @@ class BoardState{
             }
         }
 
-        Moves* pseudolegal_moves(PiecePointers* self, State self_mask, State other_mask, Piece* king){
+        Moves* pseudolegal_moves(){
+            Moves* moves = new Moves;
+            PiecePointers* self = this->get_pieces_to_play();
+            PiecePointers* other = this->get_pieces_not_to_play();
+            State self_mask = this->pieces_to_bitset(self);
+            State other_mask = this->pieces_to_bitset(other);
+            State king = this->get_king_mask(other);
+
             self->start_iter();
-            Moves* output = new Moves();
-            int king_pos = king->pos();
             while (self->has_next()){
                 Piece* piece = self->next_item();
-                State move_mask = piece->move_mask(self_mask, other_mask);
-                int starting_pos = piece->pos();
-                for (int i=0; i<64; i++){
-                    if (move_mask[i] == 1){
-                        auto temp = this->pos_to_ints(i);
-                        int from = piece->pos();
-                        int to_y = 7-temp.y;
-                        int to = this->pos(temp.x, to_y);
-                        int type = piece->type;
-                        if ((type == 0) and (((piece->colour == 1) and (to_y == 7)) or ((piece->colour == 0) and (to_y == 0)))){
-                            for (int prom=1; prom<5; prom++){
-                                Move move(from, to, prom);
-                                output->append(move);
-                                if (to == king_pos){
-                                    self->stop_iter();
-                                    delete output;
-                                    throw CapturedKingError();
-                                }
-                            }
-                        }else{
-                            Move move(from, to);
-                            output->append(move);
-                            if (to == king_pos){
-                                self->stop_iter();
-                                delete output;
-                                throw CapturedKingError();
-                            }
-                        }
-                    }
+                if (piece->legal_moves(moves, self_mask, other_mask, king)){
+                }else{
+                    delete moves;
+                    self->stop_iter();
+                    throw CapturedKingError();
                 }
             }
-            return output;
+            return moves;
         }
 
         void remove_illegal_moves(Moves* moves){
@@ -274,16 +260,8 @@ class BoardState{
 
                 BoardState* new_state = this->push(move);
 
-                // Set up vars:
-                PiecePointers* self = new_state->get_pieces_to_play();
-                PiecePointers* other = new_state->get_pieces_not_to_play();
-                State self_mask = new_state->pieces_to_bitset(self);
-                State other_mask = new_state->pieces_to_bitset(other);
-                Piece* king = new_state->get_king(other);
-                // Done
-
                 try{
-                    Moves* moves = new_state->pseudolegal_moves(self, self_mask, other_mask, king);
+                    Moves* moves = new_state->pseudolegal_moves();
                     delete moves;
                 }catch (CapturedKingError exception){
                     moves_to_remove.append(i);
@@ -319,6 +297,7 @@ class BoardState{
             pieces->start_iter();
             while (pieces->has_next()){
                 Piece* piece = pieces->next_item();
+                // check if it is the piece we are looking for
                 if ((piece->x == from_x) and (piece->y == from_y)){
                     piece_to_move = piece;
                     found = true;
@@ -337,6 +316,7 @@ class BoardState{
             pieces->start_iter();
             while (pieces->has_next()){
                 Piece* piece = pieces->next_item();
+                // Check if we are going to capture someone
                 if ((piece->x == to_x) and (piece->y == to_y)){
                     piece_captured = piece;
                     pieces->stop_iter();
@@ -358,20 +338,18 @@ class BoardState{
             return other;
         }
 
-        Piece* get_king(PiecePointers* pieces){
-            Piece* output;
-            bool found = false;
+        State get_king_mask(PiecePointers* pieces){
+            State output;
             pieces->start_iter();
             while (pieces->has_next()){
                 Piece* piece = pieces->next_item();
                 if (piece->type == 5){
-                    output = piece;
-                    found = true;
+                    output = piece->pos_mask();
                     break;
                 }
             }
             pieces->stop_iter();
-            if (not found){
+            if (not output.any()){
                 throw ValueError();
             }
             return output;
