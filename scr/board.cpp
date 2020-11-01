@@ -6,6 +6,7 @@
 #include "move.cpp"
 #include "boardstate.cpp"
 
+
 using namespace std;
 
 
@@ -75,5 +76,17 @@ class Board{
 
         void print(){
             this->state->print();
+        }
+
+        PiecePointers* get_pieces_to_play(){
+            return this->state->get_pieces_to_play();
+        }
+
+        PiecePointers* get_pieces_not_to_play(){
+            return this->state->get_pieces_not_to_play();
+        }
+
+        bool is_in_check(){
+            return this->state->is_in_check();
         }
 };
