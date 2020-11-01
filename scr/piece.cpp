@@ -5,9 +5,12 @@
 
 #include "linkedlist.cpp"
 #include "move.cpp"
-#include "memorycontrol.cpp"
+
 
 using namespace std;
+
+
+typedef bitset<64> State;
 
 
 class Piece{
@@ -331,6 +334,35 @@ class Piece{
                 letter = toupper(letter);
             }
             return letter;
+        }
+
+        bool legal_moves(Moves* moves, State self_mask, State other_mask, State king_mask){
+            State move_mask = this->move_mask(self_mask, other_mask);
+            int from = this->pos();
+            State hit_king = move_mask&king_mask;
+            if (hit_king.any()){
+                return false;
+            }
+            for (int i=0; i<64; i++){
+                if (move_mask[i]){
+                    int to_y = 7-(i>>3);  // lovely magic to speed up the code
+                    int to = 8*to_y+(i&7);// lovely magic to speed up the code
+                    if (this->type == 0){
+                        bool white = (this->colour == 1) and (to_y == 7);
+                        bool black = (this->colour == 0) and (to_y == 0);
+                        if (white or black){
+                            for (int prom=1; prom<5; prom++){
+                                moves->append(Move(from, to, prom));
+                            }
+                        }else{
+                            moves->append(Move(from, to));
+                        }
+                    }else{
+                        moves->append(Move(from, to));
+                    }
+                }
+            }
+            return true;
         }
 
         friend ostream& operator<<(ostream& os, const Piece& piece){
