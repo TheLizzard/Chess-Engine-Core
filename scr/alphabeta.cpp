@@ -35,6 +35,17 @@ int max(int a, int b){
 }
 
 
+bool check_quiet_move(Board* before, Board* after){
+    if (after->is_in_check() or before->is_in_check()){
+        return false;
+    }else{
+        int pieces_before = before->get_pieces_not_to_play()->length;
+        int pieces_after = after->get_pieces_to_play()->length;
+        return (pieces_before == pieces_after);
+    }
+}
+
+
 int eval_board(Board* board){
     int eval = 0;
     board->state->white.start_iter();
@@ -89,11 +100,11 @@ int eval_board(Board* board){
 }
 
 
-int alphabeta(Board* board, int depth, int alpha, int beta){
+int alphabeta(Board* board, int depth, int quietness, int alpha=-9999999, int beta=9999999){
     if (board->is_game_over()){
         return (9999999*((not board->player())*2-1));
     }
-    if (depth == 0){
+    if ((depth == 0) or (quietness <= 0)){
         return eval_board(board);
     }
     if (board->player()){
@@ -105,7 +116,13 @@ int alphabeta(Board* board, int depth, int alpha, int beta){
             Board* child = new Board();
             board->deepcopy_to(child);
             child->push(move);
-            value = max(value, alphabeta(child, depth-1, alpha, beta));
+            int new_value;
+            if (check_quiet_move(board, child)){
+                new_value = alphabeta(child, depth-1, quietness-1, alpha, beta);
+            }else{
+                new_value = alphabeta(child, depth-1, quietness, alpha, beta);
+            }
+            value = max(value, new_value);
             delete child;
             alpha = max(alpha, value);
             if (alpha >= beta){
@@ -122,7 +139,13 @@ int alphabeta(Board* board, int depth, int alpha, int beta){
             Board* child = new Board();
             board->deepcopy_to(child);
             child->push(move);
-            value = min(value, alphabeta(child, depth-1, alpha, beta));
+            int new_value;
+            if (check_quiet_move(board, child)){
+                new_value = alphabeta(child, depth-1, quietness-1, alpha, beta);
+            }else{
+                new_value = alphabeta(child, depth-1, quietness, alpha, beta);
+            }
+            value = min(value, new_value);
             delete child;
             beta = min(beta, value);
             if (alpha >= beta){
@@ -135,35 +158,34 @@ int alphabeta(Board* board, int depth, int alpha, int beta){
 }
 
 
-int alphabeta(Board* board, int depth){
-    return alphabeta(board, depth, -9999999, 9999999);
-}
-
-
-int alphabeta(string fen, int depth){
+int alphabeta(string fen, int depth, int quietness){
     Board* board = new Board();
     board->set_fen(fen);
-    int result = alphabeta(board, depth, -9999999, 9999999);
+    int result = alphabeta(board, depth, quietness, -9999999, 9999999);
     delete board;
     return result;
 }
 
 
 int main(int argc, char* argv[]){
-    if (argc != 3){
-        return 0;
+    if (argc != 4){
+        return 30000001;
     }
 
     string fen = argv[1];
     int depth = stoi(argv[2]);
+    int quietness = stoi(argv[3])+1;
     Board* board = new Board();
 
+    cout << fen << "\t\t" << depth << "\t\t" << quietness << "\n";
+
     board->set_fen(fen);
-    int result = alphabeta(board, depth);
+    board->legal_moves()->print();
+    int result = alphabeta(board, depth, quietness);
     delete board;
 
-    cout << fen << "\t\t\t" << depth << "\n";
     cout << "Suceess\n";
+    cout << result << "\n";
     return result+9999999;
 }
 
