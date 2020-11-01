@@ -3,7 +3,7 @@
 #include <string>
 
 #include "linkedlist.cpp"
-#include "memorycontrol.cpp"
+
 
 using namespace std;
 
