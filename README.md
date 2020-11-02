@@ -8,7 +8,9 @@ Compiling and running `alphabeta.cpp` will create a `main` function that should 
   * the max quietness as an unsigned interger (if unsure what value to use: use 100)
 
 # Notes:
-This is a function. It returns an unsigned integer where:
+The program returns an unsigned integer where:
   * 9999999 means that the position is about even
   * 0 means black is winning
   * 19999998 white is winning
+
+It will write "Suceess" to stdout. If it writes anything to stderr the result wouldn't be valid. The program doesn't do any checks
