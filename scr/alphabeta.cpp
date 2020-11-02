@@ -15,6 +15,7 @@ int BISHOP_EVAL = 3;
 int ROOK_EVAL = 5;
 int QUEEN_EVAL = 9;
 int KING_EVAL = 999999;
+int NODES_VISITED = 0;
 
 
 int min(int a, int b){
@@ -100,11 +101,16 @@ int eval_board(Board* board){
 }
 
 
-int alphabeta(Board* board, int depth, int quietness, int alpha=-9999999, int beta=9999999){
+int alphabeta(Board* board, int depth, int quietness_w, int quietness_b, int alpha=-9999999, int beta=9999999){
+    NODES_VISITED++;
+    if (NODES_VISITED%256 == 0){
+        cout << "Nodes visited = " << NODES_VISITED << "\n";
+    }
     if (board->is_game_over()){
         return (9999999*((not board->player())*2-1));
     }
-    if ((depth == 0) or (quietness <= 0)){
+    bool quiet = ((quietness_w <= 0) and (quietness_b <= 0));
+    if ((depth == 0) or quiet){
         return eval_board(board);
     }
     if (board->player()){
@@ -118,9 +124,9 @@ int alphabeta(Board* board, int depth, int quietness, int alpha=-9999999, int be
             child->push(move);
             int new_value;
             if (check_quiet_move(board, child)){
-                new_value = alphabeta(child, depth-1, quietness-1, alpha, beta);
+                new_value = alphabeta(child, depth-1, quietness_w, quietness_b-1, alpha, beta);
             }else{
-                new_value = alphabeta(child, depth-1, quietness, alpha, beta);
+                new_value = alphabeta(child, depth-1, quietness_w, quietness_b, alpha, beta);
             }
             value = max(value, new_value);
             delete child;
@@ -141,9 +147,9 @@ int alphabeta(Board* board, int depth, int quietness, int alpha=-9999999, int be
             child->push(move);
             int new_value;
             if (check_quiet_move(board, child)){
-                new_value = alphabeta(child, depth-1, quietness-1, alpha, beta);
+                new_value = alphabeta(child, depth-1, quietness_w-1, quietness_b, alpha, beta);
             }else{
-                new_value = alphabeta(child, depth-1, quietness, alpha, beta);
+                new_value = alphabeta(child, depth-1, quietness_w, quietness_b, alpha, beta);
             }
             value = min(value, new_value);
             delete child;
@@ -158,15 +164,6 @@ int alphabeta(Board* board, int depth, int quietness, int alpha=-9999999, int be
 }
 
 
-int alphabeta(string fen, int depth, int quietness){
-    Board* board = new Board();
-    board->set_fen(fen);
-    int result = alphabeta(board, depth, quietness, -9999999, 9999999);
-    delete board;
-    return result;
-}
-
-
 int main(int argc, char* argv[]){
     if (argc != 4){
         return 30000001;
@@ -177,13 +174,12 @@ int main(int argc, char* argv[]){
     int quietness = stoi(argv[3])+1;
     Board* board = new Board();
 
-    cout << fen << "\t\t" << depth << "\t\t" << quietness << "\n";
-
     board->set_fen(fen);
-    board->legal_moves()->print();
-    int result = alphabeta(board, depth, quietness);
+
+    int result = alphabeta(board, depth, quietness, quietness);
     delete board;
 
+    cout << "Nodes visited = " << NODES_VISITED << "\n";
     cout << "Suceess\n";
     cout << result << "\n";
     return result+9999999;
