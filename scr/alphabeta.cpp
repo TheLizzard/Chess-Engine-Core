@@ -10,12 +10,12 @@
 using namespace std;
 
 
-int PAWN_EVAL = 1;
-int KNIGHT_EVAL = 3;
-int BISHOP_EVAL = 3;
-int ROOK_EVAL = 5;
-int QUEEN_EVAL = 9;
-int KING_EVAL = 999999;
+float PAWN_EVAL = 1;
+float KNIGHT_EVAL = 3;
+float BISHOP_EVAL = 3;
+float ROOK_EVAL = 5;
+float QUEEN_EVAL = 9;
+float KING_EVAL = 999999;
 int NODES_VISITED = 0;
 
 
@@ -178,7 +178,64 @@ int alphabeta(Board* board, int depth, int quietness_w, int quietness_b, int alp
         }
         return value;
     }
-    cout << "Unreachable\n";
+}
+
+
+Move alphabeta_move(Board* board, int depth, int quietness_w, int quietness_b, int alpha=-9999999, int beta=9999999){
+    NODES_VISITED++;
+    Move best_move;
+    int new_value;
+    if (board->player()){
+        int value = -9999999;
+        Moves* possible_moves = board->legal_moves();
+        possible_moves->start_iter();
+        while (possible_moves->has_next()){
+            Move move = possible_moves->next_item();
+            Board* child = new Board();
+            board->deepcopy_to(child);
+            child->push(move);
+            if (check_quiet_move(board, child)){
+                new_value = alphabeta(child, depth-1, quietness_w, quietness_b-1, alpha, beta);
+            }else{
+                new_value = alphabeta(child, depth-1, quietness_w, quietness_b, alpha, beta);
+            }
+            if (new_value > value){
+                best_move = move;
+                value = new_value;
+            }
+            delete child;
+            alpha = max(alpha, value);
+            if (alpha >= beta){
+                break;
+            }
+        }
+    }else{
+        int value = 9999999;
+        Moves* possible_moves = board->legal_moves();
+        possible_moves->start_iter();
+        while (possible_moves->has_next()){
+            Move move = possible_moves->next_item();
+            Board* child = new Board();
+            board->deepcopy_to(child);
+            child->push(move);
+            if (check_quiet_move(board, child)){
+                new_value = alphabeta(child, depth-1, quietness_w-1, quietness_b, alpha, beta);
+            }else{
+                new_value = alphabeta(child, depth-1, quietness_w, quietness_b, alpha, beta);
+            }
+            if (new_value < value){
+                best_move = move;
+                value = new_value;
+            }
+            delete child;
+            beta = min(beta, value);
+            if (alpha >= beta){
+                break;
+            }
+        }
+    }
+    return best_move;
+    
 }
 
 
@@ -197,11 +254,11 @@ int main(int argc, char* argv[]){
     set_vars(folder);
     board->set_fen(fen);
 
-    int result = alphabeta(board, depth, quietness, quietness);
+    Move move = alphabeta_move(board, depth, quietness, quietness);
     delete board;
 
     cout << "Nodes visited = " << NODES_VISITED << "\n";
     cout << "Suceess\n";
-    cout << result << "\n";
-    return result+9999999;
+    cout << move << "\n";
+    return move.hash();
 }
