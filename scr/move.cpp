@@ -37,6 +37,18 @@ class Move{
             this->promotion = promotion;
         }
 
+        int hash(){
+            int x;
+            int y;
+            x = this->from&7;
+            y = this->from>>3;
+            int from = x*10+y;
+            x = this->to&7;
+            y = this->to>>3;
+            int to = x*10+y;
+            return from*1000+to*10+this->promotion;
+        }
+
         friend ostream& operator<<(ostream& os, const Move& move){
             os << "Move(from=" << move.from << ", to=" << move.to;
             os << ", promotion=" << move.promotion << ")";
