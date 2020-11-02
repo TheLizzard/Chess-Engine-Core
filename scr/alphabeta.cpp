@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 
 #include "board.cpp"
@@ -16,6 +17,23 @@ int ROOK_EVAL = 5;
 int QUEEN_EVAL = 9;
 int KING_EVAL = 999999;
 int NODES_VISITED = 0;
+
+
+int read_file(string filename){
+    ifstream file(filename);
+    string text((istreambuf_iterator<char>(file)),
+                istreambuf_iterator<char>());
+    return atof(text.c_str());
+}
+
+
+void set_vars(string folder){
+    PAWN_EVAL = read_file(folder+"Data\\PAWN_EVAL.txt");
+    KNIGHT_EVAL = read_file(folder+"Data\\KNIGHT_EVAL.txt");
+    BISHOP_EVAL = read_file(folder+"Data\\BISHOP_EVAL.txt");
+    ROOK_EVAL = read_file(folder+"Data\\ROOK_EVAL.txt");
+    QUEEN_EVAL = read_file(folder+"Data\\QUEEN_EVAL.txt");
+}
 
 
 int min(int a, int b){
@@ -169,11 +187,14 @@ int main(int argc, char* argv[]){
         return 30000001;
     }
 
+    string filename = argv[0];
+    string folder = filename.substr(0, filename.size()-16);
     string fen = argv[1];
     int depth = stoi(argv[2]);
     int quietness = stoi(argv[3])+1;
     Board* board = new Board();
 
+    set_vars(folder);
     board->set_fen(fen);
 
     int result = alphabeta(board, depth, quietness, quietness);
@@ -184,4 +205,3 @@ int main(int argc, char* argv[]){
     cout << result << "\n";
     return result+9999999;
 }
-
