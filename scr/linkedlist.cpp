@@ -75,7 +75,7 @@ template <class Type>
                     delete temp;
                     return data;
                 }else{
-                    this->next->pop();
+                    return this->next->pop();
                 }
             }
     };
@@ -89,10 +89,7 @@ template <class Type>
             Node<Type>* iter_node = NULL;
 
             ~List(){
-                this->stop_iter();
-                while (this->next != NULL){
-                    Type _ = this->pop();
-                }
+                this->flush();
             }
 
             void deepcopy_to(List<Type>* _new){
@@ -121,7 +118,7 @@ template <class Type>
             void flush(){
                 this->stop_iter();
                 while (this->next != NULL){
-                    this->pop();
+                    Type value = this->pop();
                 }
             }
 
@@ -189,7 +186,7 @@ template <class Type>
                     delete temp;
                     return data;
                 }else{
-                    this->next->pop();
+                    return this->next->pop();
                 }
             }
 
