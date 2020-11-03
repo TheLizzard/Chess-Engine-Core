@@ -65,53 +65,72 @@ bool check_quiet_move(Board* before, Board* after){
 }
 
 
-int eval_board(Board* board){
-    int eval = 0;
-    board->state->white.start_iter();
-    while (board->state->white.has_next()){
-        Piece* piece = board->state->white.next_item();
-        switch (piece->type){
-            case 0:
-                eval += PAWN_EVAL;
-                break;
-            case 1:
-                eval += KNIGHT_EVAL;
-                break;
-            case 2:
-                eval += BISHOP_EVAL;
-                break;
-            case 3:
-                eval += ROOK_EVAL;
-                break;
-            case 4:
-                eval += QUEEN_EVAL;
-                break;
-            case 5:
-                eval += KING_EVAL;
-                break;
+double eval_pieces(PiecePointers list){
+    double eval = 0;
+    list.start_iter();
+    while (list.has_next()){
+        Piece* piece = list.next_item();
+        double multiplier = 1.0;
+
+        int rank;
+        if (piece->colour){
+            rank = piece->y;
+        }else{
+            rank = 7-piece->y;
         }
-    }
-    board->state->black.start_iter();
-    while (board->state->black.has_next()){
-        Piece* piece = board->state->black.next_item();
+
+        if ((piece->type == 1) or (piece->type == 2)){
+            // Stop underdevelopment only applies to knights and bishops
+            if ((piece->y == 0) or (piece->y == 7)){
+                multiplier *= 0.85;
+            }
+            if (rank > 3){
+                multiplier *= 0.98;
+            }
+        }
         switch (piece->type){
-            case 0:
-                eval -= PAWN_EVAL;
+            case 0:// Encourage pawn pushing
+                switch (rank){
+                    case 1:
+                        break;
+                    case 2:
+                        multiplier *= 1.05;
+                        break;
+                    case 3:
+                        multiplier *= 1.1;
+                        break;
+                    case 4:
+                        multiplier *= 1.2;
+                        break;
+                    case 5:
+                        multiplier *= 2;
+                        break;
+                    case 6:
+                        multiplier *= 2.5;
+                        break;
+                }
+                eval += PAWN_EVAL*multiplier;
                 break;
             case 1:
-                eval -= KNIGHT_EVAL;
+                // As a popular saying goes:
+                //     "Knights on the rim are dim"
+                // Some people disagree with that
+                if ((piece->x == 0) or (piece->x == 7)){
+                    multiplier = 0.95;
+                }
+                eval += KNIGHT_EVAL*multiplier;
                 break;
             case 2:
-                eval -= BISHOP_EVAL;
+                eval += BISHOP_EVAL*multiplier;
                 break;
             case 3:
-                eval -= ROOK_EVAL;
+                eval += ROOK_EVAL*multiplier;
                 break;
             case 4:
-                eval -= QUEEN_EVAL;
+                eval += QUEEN_EVAL*multiplier;
                 break;
-            case 5:
-                eval -= KING_EVAL;
+            case 5:// Later: encourage king safety (castling)?
+                eval += KING_EVAL*multiplier;
                 break;
         }
     }
@@ -119,9 +138,16 @@ int eval_board(Board* board){
 }
 
 
-int alphabeta(Board* board, int depth, int quietness_w, int quietness_b, int alpha=-9999999, int beta=9999999){
+double eval_board(Board* board){
+    double eval = eval_pieces(board->state->white);
+    eval -= eval_pieces(board->state->black);
+    return eval;
+}
+
+
+double alphabeta(Board* board, int depth, int quietness_w, int quietness_b, double alpha=-9999999, double beta=9999999){
     NODES_VISITED++;
-    if (NODES_VISITED%256 == 0){
+    if ((NODES_VISITED&511) == 0){
         cout << "Nodes visited = " << NODES_VISITED << "\n";
     }
     if (board->is_game_over()){
@@ -131,8 +157,9 @@ int alphabeta(Board* board, int depth, int quietness_w, int quietness_b, int alp
     if ((depth == 0) or quiet){
         return eval_board(board);
     }
+    double new_value;
     if (board->player()){
-        int value = -9999999;
+        double value = -9999999;
         Moves* possible_moves = board->legal_moves();
         possible_moves->start_iter();
         while (possible_moves->has_next()){
@@ -140,7 +167,6 @@ int alphabeta(Board* board, int depth, int quietness_w, int quietness_b, int alp
             Board* child = new Board();
             board->deepcopy_to(child);
             child->push(move);
-            int new_value;
             if (check_quiet_move(board, child)){
                 new_value = alphabeta(child, depth-1, quietness_w, quietness_b-1, alpha, beta);
             }else{
@@ -155,7 +181,7 @@ int alphabeta(Board* board, int depth, int quietness_w, int quietness_b, int alp
         }
         return value;
     }else{
-        int value = 9999999;
+        double value = 9999999;
         Moves* possible_moves = board->legal_moves();
         possible_moves->start_iter();
         while (possible_moves->has_next()){
@@ -163,7 +189,6 @@ int alphabeta(Board* board, int depth, int quietness_w, int quietness_b, int alp
             Board* child = new Board();
             board->deepcopy_to(child);
             child->push(move);
-            int new_value;
             if (check_quiet_move(board, child)){
                 new_value = alphabeta(child, depth-1, quietness_w-1, quietness_b, alpha, beta);
             }else{
@@ -181,12 +206,12 @@ int alphabeta(Board* board, int depth, int quietness_w, int quietness_b, int alp
 }
 
 
-Move alphabeta_move(Board* board, int depth, int quietness_w, int quietness_b, int alpha=-9999999, int beta=9999999){
+Move alphabeta_move(Board* board, int depth, int quietness_w, int quietness_b, double alpha=-9999999, double beta=9999999){
     NODES_VISITED++;
     Move best_move;
-    int new_value;
+    double new_value;
     if (board->player()){
-        int value = -9999999;
+        double value = -9999999;
         Moves* possible_moves = board->legal_moves();
         possible_moves->start_iter();
         while (possible_moves->has_next()){
@@ -210,7 +235,7 @@ Move alphabeta_move(Board* board, int depth, int quietness_w, int quietness_b, i
             }
         }
     }else{
-        int value = 9999999;
+        double value = 9999999;
         Moves* possible_moves = board->legal_moves();
         possible_moves->start_iter();
         while (possible_moves->has_next()){
@@ -238,27 +263,37 @@ Move alphabeta_move(Board* board, int depth, int quietness_w, int quietness_b, i
     
 }
 
+/*
+D:\Documents\BackUp\Projects\editors\C++\__pycache__\
+*/
 
 int main(int argc, char* argv[]){
-    if (argc != 4){
+    if (argc != 5){
         return 30000001;
     }
 
-    string filename = argv[0];
-    string folder = filename.substr(0, filename.size()-16);
-    string fen = argv[1];
-    int depth = stoi(argv[2]);
-    int quietness = stoi(argv[3])+1;
-    Board* board = new Board();
+    // Arg 0 must be the location of the data in the
+    // format <Drive:\Folder\...\Folder\>
+    string folder = argv[1];
 
+    // Arg 1 must be a valid fen
+    string fen = argv[2];
+
+    // Args 2 must be an int that is >0
+    int depth = stoi(argv[3]);
+
+    // Args 3 must be an int. If unsure use: 100
+    int quietness = stoi(argv[4])+1;
+
+    Board* board = new Board();
     set_vars(folder);
     board->set_fen(fen);
-
     Move move = alphabeta_move(board, depth, quietness, quietness);
-    delete board;
 
+    delete board;
     cout << "Nodes visited = " << NODES_VISITED << "\n";
     cout << "Suceess\n";
     cout << move << "\n";
     return move.hash();
 }
+
