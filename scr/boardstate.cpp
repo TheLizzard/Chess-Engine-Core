@@ -231,7 +231,7 @@ class BoardState{
         }
 
         Moves* pseudolegal_moves(){
-            Moves* moves = new Moves;
+            Moves* moves = new Moves();
             PiecePointers* self = this->get_pieces_to_play();
             PiecePointers* other = this->get_pieces_not_to_play();
             State self_mask = this->pieces_to_bitset(self);
@@ -278,7 +278,7 @@ class BoardState{
         }
 
         BoardState* push(Move move){
-            BoardState* other = new BoardState;
+            BoardState* other = new BoardState();
             this->deepcopy_to(other);
 
             auto ints = other->pos_to_ints(move.from);
