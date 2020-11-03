@@ -24,3 +24,10 @@ class SuperClass{
             //free(ptr);
         }
 };
+
+
+void is_on_heap(long long int variable_testing){
+    int heap_variable;int* pointer = &heap_variable;
+    bool on_heap = (long long int)pointer<variable_testing;
+    cout << "On heap = " << (on_heap?"true":"false") << "\n";
+}
