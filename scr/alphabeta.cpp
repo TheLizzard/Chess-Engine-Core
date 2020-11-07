@@ -19,10 +19,11 @@ float KING_EVAL = 999999;
 int NODES_VISITED = 0;
 
 
+
 int read_file(string filename){
     ifstream file(filename);
     string text((istreambuf_iterator<char>(file)),
-                istreambuf_iterator<char>());
+                 istreambuf_iterator<char>());
     return atof(text.c_str());
 }
 
@@ -151,7 +152,12 @@ double alphabeta(Board* board, int depth, int quietness_w, int quietness_b, doub
         cout << "Nodes visited = " << NODES_VISITED << "\n";
     }
     if (board->is_game_over()){
-        return (9999999*((not board->player())*2-1));
+        if (board->is_in_check()){
+            return (9999999*((not board->player())*2-1));
+        }else{
+            // Stalemate
+            return 0;
+        }
     }
     bool quiet = ((quietness_w <= 0) and (quietness_b <= 0));
     if ((depth == 0) or quiet){
@@ -296,4 +302,3 @@ int main(int argc, char* argv[]){
     cout << move << "\n";
     return move.hash();
 }
-
