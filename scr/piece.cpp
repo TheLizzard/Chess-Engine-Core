@@ -91,6 +91,7 @@ class Piece{
                     if (this->step_direction(self, other, -1, 1) == 2){
                         output |= this->pos_mask(-1,  1);
                     }
+                    break;
 
                 // If the piece is a knight
                 case 1:
@@ -126,19 +127,23 @@ class Piece{
                     if ((result == 2) or (result == 3)){
                         output |= this->pos_mask(-1,  -2);
                     }
+                    break;
 
                 // If the piece is a bishop
                 case 2:
                     output |= this->diagonals(self, other);
+                    break;
 
                 // If the piece is a root
                 case 3:
                     output |= this->horizontal_vertical(self, other);
+                    break;
 
                 // If the piece is a queen
                 case 4:
                     output |= this->horizontal_vertical(self, other);
                     output |= this->diagonals(self, other);
+                    break;
 
                 // if the piece is a king:
                 case 5:
@@ -174,6 +179,7 @@ class Piece{
                     if ((result == 2) or (result == 3)){
                         output |= this->pos_mask(1, -1);
                     }
+                    break;
             }
             return output;
         }
