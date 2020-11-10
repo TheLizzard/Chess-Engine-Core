@@ -302,7 +302,7 @@ class BoardState{
                     piece_to_move = piece;
                     found = true;
                     pieces->stop_iter();
-                    if ((piece->type == 0) and (((to_y == 7) and piece->colour) or ((to_y == 0) and not piece->colour)) and (move.promotion == NULL)){
+                    if ((piece->type == 0) and (((to_y == 7) and piece->colour) or ((to_y == 0) and not piece->colour)) and (move.promotion == 0)){
                         throw MoveNeedsPromotionError();
                     }
                     break;
