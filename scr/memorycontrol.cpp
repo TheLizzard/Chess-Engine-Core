@@ -45,6 +45,7 @@ bool is_on_heap(long long int variable_testing){
     on the heap or on the stack. It does that by createing a
     new object that is on the stack and comparing its location
     to the pointer passed in.
+    Parly taken from: https://stackoverflow.com/a/2057677/11106801
     */
 
     // Create the stack variable
