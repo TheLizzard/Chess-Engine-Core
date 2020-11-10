@@ -10,17 +10,20 @@
 using namespace std;
 
 
-float PAWN_EVAL = 1;
-float KNIGHT_EVAL = 3;
-float BISHOP_EVAL = 3;
-float ROOK_EVAL = 5;
-float QUEEN_EVAL = 9;
-float KING_EVAL = 999999;
+double PAWN_EVAL = 1;
+double KNIGHT_EVAL = 3;
+double BISHOP_EVAL = 3;
+double ROOK_EVAL = 5;
+double QUEEN_EVAL = 9;
+double KING_EVAL = 999999;
 int NODES_VISITED = 0;
 
 
 
-int read_file(string filename){
+double read_file(string filename){
+    /*
+    Read the file and return the contents.
+    */
     ifstream file(filename);
     string text((istreambuf_iterator<char>(file)),
                  istreambuf_iterator<char>());
@@ -37,7 +40,7 @@ void set_vars(string folder){
 }
 
 
-int min(int a, int b){
+double min(double a, double b){
     if (a > b){
         return b;
     }else{
@@ -46,7 +49,7 @@ int min(int a, int b){
 }
 
 
-int max(int a, int b){
+double max(double a, double b){
     if (a > b){
         return a;
     }else{
@@ -79,16 +82,6 @@ double eval_pieces(PiecePointers list){
         }else{
             rank = 7-piece->y;
         }
-
-        if ((piece->type == 1) or (piece->type == 2)){
-            // Stop underdevelopment only applies to knights and bishops
-            if ((piece->y == 0) or (piece->y == 7)){
-                multiplier *= 0.85;
-            }
-            if (rank > 3){
-                multiplier *= 0.98;
-            }
-        }
         switch (piece->type){
             case 0:// Encourage pawn pushing
                 switch (rank){
@@ -119,9 +112,21 @@ double eval_pieces(PiecePointers list){
                 if ((piece->x == 0) or (piece->x == 7)){
                     multiplier = 0.95;
                 }
+                // Stop underdevelopment only applies to knights and bishops
+                if (rank == 0){
+                    multiplier *= 0.9;
+                }else{
+                    multiplier *= (1-rank/200);
+                }
                 eval += KNIGHT_EVAL*multiplier;
                 break;
             case 2:
+                // Stop underdevelopment only applies to knights and bishops
+                if (rank == 0){
+                    multiplier *= 0.9;
+                }else{
+                    multiplier *= (1-rank/200);
+                }
                 eval += BISHOP_EVAL*multiplier;
                 break;
             case 3:
