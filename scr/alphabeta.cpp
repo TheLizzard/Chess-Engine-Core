@@ -40,24 +40,6 @@ void set_vars(string folder){
 }
 
 
-double min(double a, double b){
-    if (a > b){
-        return b;
-    }else{
-        return a;
-    }
-}
-
-
-double max(double a, double b){
-    if (a > b){
-        return a;
-    }else{
-        return b;
-    }
-}
-
-
 bool check_quiet_move(Board* before, Board* after){
     if (after->is_in_check() or before->is_in_check()){
         return false;
