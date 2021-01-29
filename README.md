@@ -1,5 +1,5 @@
 # Chess-Engine-Core
-The core of my chess engine. This has been created for a Computer Science project. My candidate number is 4180.
+The core of my chess engine. This has been created for a Computer Science project. My candidate number is 6401.
 
 # Compiling and Running:
 Compiling and running `alphabeta.cpp` will create a `main` function that should be called with 3 arguments:
